@@ -1,0 +1,121 @@
+name: Build and Publish
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install build backend
+        run: python -m pip install --upgrade pip hatchling hatch-vcs
+
+      - name: Build wheel and sdist
+        run: python -m pip install hatch && hatch build dist/
+
+      - name: Store the distribution packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+  publish-to-pypi:
+    name: Publish to PyPI
+    # Only run for “clean / stable” tags (no dev/rc/alpha/beta)
+    if: ${{ !(contains(github.ref_name, 'dev') || contains(github.ref_name, 'rc') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta')) }}
+    needs: [build]
+    runs-on: ubuntu-22.04
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
+
+  publish-to-testpypi:
+    name: Publish to TestPyPI (dev / rc / alpha / beta)
+    needs: [build]
+    runs-on: ubuntu-22.04
+    environment: testpypi
+    permissions:
+      id-token: write
+      contents: read
+    if: ${{ contains(github.ref_name, 'dev') || contains(github.ref_name, 'rc') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+
+  github-release:
+    name: Sign & Create GitHub Release
+    needs: [publish-to-pypi]
+    if: needs.publish-to-pypi.result == 'success'
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install Sigstore dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install cryptography==43.0.3
+
+      - name: Sign dists with Sigstore
+        uses: sigstore/gh-action-sigstore-python@v2.1.1
+        with:
+          inputs: |
+            ./dist/*.tar.gz
+            ./dist/*.whl
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          TAG_NAME="${{ github.ref_name }}"
+          gh release create "$TAG_NAME" \
+            --repo "${{ github.repository }}" \
+            --title "AgentLab $TAG_NAME" \
+            --generate-notes \
+            --fail-on-no-commits
+
+      - name: Upload artifacts to Release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ github.ref_name }}" dist/** --repo "${{ github.repository }}"

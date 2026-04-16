@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Secrets
+.env
+*.env
+!.env.example
+
+# Root-level artifacts
+save/
+*.log
+
+# ComputerRouter large artifacts
+ComputerRouter/cache/
+ComputerRouter/logs/
+ComputerRouter/draft/
+ComputerRouter/results/
+start_qwen35_27b.sh
+
+# Legacy / auxiliary BERT scripts (not part of core labeling→training pipeline)
+ComputerRouter/bert/eval_finetuned_bert_on_evocua_8b.py
+ComputerRouter/bert/generate_step_overlap_json.py
+ComputerRouter/bert/plot_trajectory_analysis.py
+ComputerRouter/bert/build_training_dataset.py
+ComputerRouter/bert/analyze_trajectory_heterogeneity.py
+ComputerRouter/bert/analyze_step_overlap.py

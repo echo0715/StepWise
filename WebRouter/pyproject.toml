@@ -1,0 +1,120 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agentlab"
+dynamic = ["version"]
+description = "Main package for developing agents and experiments"
+authors = [
+    {name = "Rim Assouel", email = "rim.assouel@gmail.com"},
+    {name = "Alex Drouin", email = "alex.drouin@servicenow.com"},
+    {name = "Maxime Gasse", email = "maxime.gasse@servicenow.com"},
+    {name = "Alex Lacoste", email = "alex.lacoste@servicenow.com"},
+    {name = "Tom Marty", email = "tom.marty@polymtl.ca"},
+    {name = "Massimo Caccia", email = "massimo.caccia1@servicenow.com"},
+    {name = "Thibault Le Sellier de Chezelles", email = "thibault.de.chezelles@gmail.com"},
+    {name = "Aman Jaiswal", email = "aman.jaiswal@servicenow.com"},
+]
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+license = {text = "Apache-2.0"}
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: Apache Software License",
+]
+dependencies = [
+    "pydantic~=2.9",
+    "dask",
+    "distributed",
+    "browsergym>=0.7.1",
+    "joblib>=1.2.0",
+    "openai>=1.7,<2",
+    "tiktoken",
+    "huggingface_hub",
+    "contexttimer",
+    "ipython",
+    "pyyaml>=6",
+    "pandas",
+    "gradio>=5.5",
+    "gitpython",
+    "requests",
+    "matplotlib",
+    "ray[default]",
+    "python-slugify",
+    "pillow",
+    "gymnasium>=0.27",
+    "torch>=2.2.2",
+    "anthropic>=0.62.0",
+    "litellm>=1.75.3",
+    "python-dotenv>=1.1.1",
+    "browser-use>=0.9.5",
+]
+
+[project.optional-dependencies]
+hint = [
+    "sentence-transformers>=5.0.0",
+]
+transformers = [
+    "transformers>=4.38.2", 
+]
+
+
+[project.urls]
+Homepage = "https://github.com/ServiceNow/AgentLab"
+
+[tool.hatch.version]
+source = "vcs" # use version from git tags
+fallback-version = "0.0.0"
+[tool.hatch.build.targets.wheel]
+packages = ["src/agentlab"]
+[tool.hatch.build.hooks.vcs]
+version-file = "src/agentlab/_version.py"
+[tool.hatch.version.raw-options]
+version_scheme = "guess-next-dev"
+
+[tool.black]
+line-length = 100
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.nox
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+force-exclude = '''
+src/agentlab/_version\.py$
+'''
+
+[dependency-groups]
+dev = [
+    "darglint>=1.8.1",
+    "ipykernel>=6.30.1",
+    "pip>=25.2",
+    "black[jupyter]>=24.2.0",
+    "blacken-docs",
+    "pre-commit",
+    "pytest==7.3.2",
+    "flaky",
+    "pytest-xdist",
+    "pytest-playwright",
+]
+
+
+[project.scripts]
+agentlab-assistant = "agentlab.ui_assistant:main"
+agentlab-xray = "agentlab.analyze.agent_xray:main"
+agentlab-mentor = "agentlab.agents.hitl_agent.launch_hint_ui:main"
